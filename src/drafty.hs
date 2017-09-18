@@ -13,7 +13,7 @@ type Content = String
 type Card = (Content, Content, Maybe Content)
 -- data Step = Answer | Question
 type Deck = [Card]
-type Stats = (Int, Int, Int)
+type Score = (Int, Int, Int)
 data Config = Cfg {
   maybeFlip: Deck -> Deck,
   maybeRandom: Deck -> Deck,
@@ -56,38 +56,43 @@ asDeck file
     maybeCard (a: b: rest) = Just (a, b, concat rest)
     maybeCard _ = Nothing
 
-lesson :: (Deck, Config) -> m ()
-lesson (deck, cfg) =
+teaching :: (Deck, Config) -> m ()
+teaching (deck, cfg) =
     processed deck
     & walk emptyMistakes emptyStats (maybeVerbose cfg) (maybeLoop doLoop)
   where
     emptyMistakes = []
     emptyStats = (0,0,0)
     processed deck = deck & maybeFlip cfg & maybeRandom cfg
-    doLoop = lesson (deck, cfg)
+    doLoop = teaching (deck, cfg)
 
-walk :: Deck -> Deck -> Stats -> m () -> m Stats
-walk [] stats _ maybeLoop [] = doPrint stats >> maybeLoop
-walk mistakes stats _ _ [] = walk mistakes [] stats
-walk mistakes stats maybeVerbose maybeLoop deck =
-  let
-    (card : rest) = deck
-    ((first, second), maybeN) = card in
-    maybeVerbose (doPrint stats) >>
-    showFirst first >> doListen Question $ \case
-      Answer -> showSecond second maybeN >> doListen Answer $ \case
-        Mistake -> rec rest (thisCard:mistakes) (newMistake stats)
-        NoMistake -> simpleRec
-      Skip -> simpleRec
+walk
+  :: (m () -> m ())
+  -> m ()
+  -> Score
+  -> WithMistakes Deck
+  -> m ()
+walk maybeVerbose maybeLoop score ([],[]) = printing score >> maybeLoop
+walk maybeVerbose maybeLoop score ([],mistakes) = rec (mistakes, [])
+walk maybeVerbose maybeLoop score (deck, mistakes) =
+    let
+      (card : rest) = deck
+      ((first, second), maybeN) = card
+    in
+      maybeVerbose (printing score) >>
+      showFirst first >> listening Question $ \case
+        Answer -> showSecond second maybeN >> listening Answer $ \case
+          Mistake -> rec (newMistake score) (rest, thisCard:mistakes)
+          NoMistake -> rec score (rest, mistakes)
+        Skip -> rec score (rest, mistakes)
   where
-    rec deck mistakes stats = walk deck mistakes stats maybeVerbose maybeLoop
-    simpleRec = rec rest mistakes stats
+    rec = walk maybeVerbose maybeLoop
     
     showFirst = show_
     showSecond = [second, maybeN] & justList / concat / show_
     
-    doListen step cont = getChar =>> charToCmd step >>=
-        maybe (doListen step cont) (doGenCmd ||| cont)
+    listening step cont = getChar =>> charToCmd step >>=
+        maybe (listening step cont) (doGenCmd ||| cont)
     doGenCmd _ Quit = pure ()
     doGenCmd _ QuitSave = putStrLn "\nfilename:"
         >> getLine >>= writeFile (fromDeck $ deck ++ mistakes)
