@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Teacher (teaching, input) where
 
 -- base
@@ -6,23 +7,35 @@ import qualified Control.Arrow as Arr
 import qualified Data.Tuple as Tuple (swap)
 
 -- not base
-import Data.String.Split (splitOn)
+import Data.List.Split (splitOn)
 
+(&) = flip ($)
+(./) = flip (.)
+(=>>) :: Functor f => f a -> (a -> b) -> f b
+(=>>) = flip (<$>)
+justList = undefined :: [Maybe a] -> [a]
+
+data CmdCard = Skip | Reveal | Mistake | NoMistake
+data CmdGen = Quit | QuitSave
+data Step = Answer | Question
 
 type Content = String
 type Card = (Content, Content, Maybe Content)
--- data Step = Answer | Question
 type Deck = [Card]
+type WithMistakes a = (a, Deck)
+
 type Score = (Int, Int, Int)
-data Config = Cfg {
-  maybeFlip: Deck -> Deck,
-  maybeRandom: Deck -> Deck,
-  maybeLoop: m () -> m (),
-  maybeVerbose: m () -> m () }
 
-main = getArgs >>= input >>= either error teaching
+data Config m = Config {
+  maybeFlip :: Deck -> Deck,
+  maybeRandom :: Deck -> Deck,
+  maybeLoop :: m () -> m (),
+  maybeVerbose :: m () -> m ()
+}
 
-input :: [String] -> m (Either String (Deck, Config))
+-- main = getArgs >>= input >>= either error teaching
+
+input :: [String] -> m (Either String (Deck, Config m))
 input args = maybe maybeFiles
     (pure $ Left "Input error (no files given)")
     $ \files -> mapM readingDeck files =>> \decks ->
@@ -56,7 +69,7 @@ asDeck file
     maybeCard (a: b: rest) = Just (a, b, concat rest)
     maybeCard _ = Nothing
 
-teaching :: (Deck, Config) -> m ()
+teaching :: (Deck, Config m) -> m ()
 teaching (deck, cfg) =
     processed deck
     & walk emptyMistakes emptyStats (maybeVerbose cfg) (maybeLoop doLoop)
@@ -65,6 +78,10 @@ teaching (deck, cfg) =
     emptyStats = (0,0,0)
     processed deck = deck & maybeFlip cfg & maybeRandom cfg
     doLoop = teaching (deck, cfg)
+
+printing = undefined
+newMistake = undefined
+readingChar = undefined :: m Char
 
 walk
   :: (m () -> m ())
@@ -81,18 +98,19 @@ walk maybeVerbose maybeLoop score (deck, mistakes) =
     in
       maybeVerbose (printing score) >>
       showFirst first >> listening Question $ \case
-        Answer -> showSecond second maybeN >> listening Answer $ \case
-          Mistake -> rec (newMistake score) (rest, thisCard:mistakes)
+        Reveal -> showSecond [second, maybeN] >> listening Answer $ \case
+          Mistake -> rec (newMistake score) (rest, card:mistakes)
           NoMistake -> rec score (rest, mistakes)
         Skip -> rec score (rest, mistakes)
   where
     rec = walk maybeVerbose maybeLoop
     
+    show_ = undefined
     showFirst = show_
-    showSecond = [second, maybeN] & justList / concat / show_
+    showSecond = justList ./ concat ./ show_
     
-    listening step cont = getChar =>> charToCmd step >>=
-        maybe (listening step cont) (doGenCmd ||| cont)
+    listening step cont = (readingChar =>> charToCmd step) >>=
+        maybe (listening step cont) (doGenCmd undefined ||| cont)
     doGenCmd _ Quit = pure ()
     doGenCmd _ QuitSave = putStrLn "\nfilename:"
         >> getLine >>= writeFile (fromDeck $ deck ++ mistakes)
@@ -100,7 +118,7 @@ walk maybeVerbose maybeLoop score (deck, mistakes) =
 charToCmd :: Step -> Char -> Maybe (Either CmdGen CmdCard)
 charToCmd _ 'q' = Left Quit & Just
 charToCmd _ 'z' = Left QuitSave & Just
-charToCmd Question 'a' = Right Answer & Just
+charToCmd Question 'a' = Right Reveal & Just
 charToCmd Question 's' = Right Skip & Just
 charToCmd Answer 'm' = Right Mistake & Just
 charToCmd Answer 'n' = Right NoMistake & Just

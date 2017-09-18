@@ -1,6 +1,7 @@
 module Main where
 
-import Lib
+import Teacher
+import System.Environment (getArgs)
 
 main :: IO ()
-main = someFunc
+main = getArgs >>= input >>= either error teaching
