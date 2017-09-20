@@ -8,5 +8,6 @@ BufferKey  C  .cabal
 BufferKey  T  Teacher.hs
 BufferKey  M  Main.hs
 BufferKey  D  deck1
+BufferKey  E  deck2
 BufferKey  P  Parser.hs
 BufferKey  U  Types.hs

@@ -45,6 +45,7 @@ teaching :: (Deck, Config) -> IO ()
 teaching (deck, cfg) = do
     g <- newStdGen
     let processed = maybeFlip cfg ./ maybeRandom cfg g
+    print $ fmap (\(a, b, c) -> a) $ processed deck
     (withMistakes $ processed deck)
       & walk (maybeVerbose cfg) (maybeLoop cfg doLoop) emptyStats
   where
@@ -60,15 +61,21 @@ ttt (x:xs) = xs: ttt xs
 
 shuffle :: [Int] -> [a] -> [a]
 shuffle rs [] = []
-shuffle rs xs = h : shuffle is (beg <> end)
+shuffle rs [x] = [x]
+shuffle rs xs = h : shuffle is (end <> beg)
+    -- reversing end and beg avoids constantly ending
+    -- the shuffling with (foot xs)
   where
-    (beg, h:end) = takeAndRest i xs
-    (i:is) = processed rs
-    processed
-      =  fmap (`mod` ln)
-      ./ filter (/= (ln - 1))
+    (beg, h:end) = takeAndRest (processed i) xs
+    (i:is) = flip trailWhen rs
+      (processed ./ diff (ln - 1))
+    processed i = mod i ln
     ln = length xs
     takeAndRest n xs = (take n xs, drop n xs)
+    trailWhen p [] = []
+    trailWhen p (x:xs)
+      | p x = x:xs
+      | otherwise = trailWhen p xs
 
 randomDeck :: StdGen -> Deck -> Deck
 randomDeck rg deck = shuffle (randoms rg :: [Int]) deck

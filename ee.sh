@@ -6,4 +6,4 @@ vim -S se.vim \
   src/*.hs \
   src/Teacher/*.hs \
   app/* \
-  test/deck1
+  test/deck1 test/deck2
