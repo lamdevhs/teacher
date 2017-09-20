@@ -3,6 +3,7 @@
 vim -S se.vim \
   se.vim ee.sh \
   *.yaml *.cabal \
-  src/* \
+  src/*.hs \
+  src/Teacher/*.hs \
   app/* \
   test/deck1

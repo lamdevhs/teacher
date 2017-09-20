@@ -22,4 +22,4 @@ pureArgs = pure
   -- : [])
   : files )
 
-files = "test/deck1" : []
+files = "test/deck1" : "test/deck2" : []
