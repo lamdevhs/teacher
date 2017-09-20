@@ -4,4 +4,5 @@ vim -S se.vim \
   se.vim ee.sh \
   *.yaml *.cabal \
   src/* \
-  app/*
+  app/* \
+  test/deck1

@@ -7,3 +7,4 @@ BufferKey  C  .cabal
 
 BufferKey  T  Teacher.hs
 BufferKey  M  Main.hs
+BufferKey  D  deck1
