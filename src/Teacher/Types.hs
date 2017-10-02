@@ -35,10 +35,6 @@ data CmdCard = Skip | ShowAnswer | Mistake | Next deriving Show
 data CmdGen = Quit | QuitSave | ShowScore deriving Show
 data Step = Answer | Question
 
-type Content = String
-type Card = (Content, Content, Maybe Content)
-type Deck = [Card]
-type WithMistakes a = (a, Deck)
 
 type Score = (Int, Int, Int)
 

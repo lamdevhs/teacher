@@ -1,4 +1,5 @@
 bufdo e
+syntax on
 
 BufferKey  #  ee.sh
 BufferKey  S  se.vim
@@ -7,7 +8,8 @@ BufferKey  C  .cabal
 
 BufferKey  T  Teacher.hs
 BufferKey  M  Main.hs
-BufferKey  D  deck1
+BufferKey  C  deck1
 BufferKey  E  deck2
 BufferKey  P  Parser.hs
 BufferKey  U  Types.hs
+BufferKey  D  Deck.hs
