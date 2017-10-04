@@ -4,48 +4,6 @@ import Teacher.Types
 -- not base
 import Data.List.Split (splitOn)
 
--- * Format of a deck file:
--- ** it's a sequence of cards
--- each card has two mandatory parts (two sides), x and y,
--- and an optional additional field, z, which is always on the
--- 'answer' side even if the deck is flipped
---
--- ** three possible syntax:
---    . oneliner:
---      ,, x ,, y ,, z
---    . multiline:
---      * x
---      x
---      ** y
---      y
---      ** z
---      z
---    . multi-oneliner:
---      = x
---      y
---      z
--- 
--- ** any white char at the beginning or end of a field
--- will be trimmed
-
-type Content = String
-type Card = (Content, Content, Content)
-type Deck = [Card]
-type WithMistakes a = (a, Deck)
-
-type Lines = [String]
-
-glueWith :: a -> [[a]] -> [a]
-glueWith x [] = []
-glueWith x [xs] = xs
-glueWith x (xs:r) = xs ++ (x : glueWith x r)
-
-asHead :: a -> [a] -> [a]
-asHead x xs = x:xs
-
-readingDeck :: FilePath -> IO Deck
-readingDeck path = readFile path =>> asDeck
-
 
 newtype RawCard = RawCard (m (Maybe Card), Lines)
 
@@ -75,6 +33,12 @@ h pp changed ma = get >>= \s ->
 type Subparser m = m (Maybe Card)
 type P m = (Line -> P m) -> Lines -> m [(Lines, Subparser)]
 
+newtype DeckParserS = DeckParserS (RawCard, [RawCard])
+
+class (MonadState S m) => DeckParser m where
+    headOfRawCard :: Line -> m ()
+  
+
 p
   :: MonadState Lines m
   => LineTest
@@ -94,9 +58,23 @@ p testLine subparser initParsers acc = do
         Keep -> recCont (acc ++ [l])
   where
     recCont = p testLine subparser initParsers
-    recNext p acc =
+    recNext p newAcc =
       fmap ((acc, subparser):) $
-        p initParsers acc
+        p initParsers newAcc
+
+p initp linep acc = get >>= \case
+  [] -> pure [acc]
+  line:_ -> case initp line of
+    Just (newAcc, newLinep) -> fmap (asHead acc) $
+      p initp newLinep newAcc
+    Nothing -> linep (p initp) acc l
+
+skipLinep p acc l = p garbagep acc
+keepLinep p acc l = p keepLinep (first (++ [l]) acc)
+stopLinep p acc l = fmap (asHead acc') $ p skipLinep emptyAcc
+  where acc' = first (++ [l]) acc
+
+emptyAcc = ([], pure Nothing)
 
 garbageParser = p (alwaysSkip) (pure Nothing)
 
@@ -274,9 +252,9 @@ _N = 10
 cardSep = "\n" <> replicate _N '=' <> "\n"
 postCardSep = "\n" <> replicate _N '-'
 
-showFirst :: Content -> String
+showFirst :: String -> String
 showFirst c = cardSep <> c
-showSecond :: Content -> Maybe Content -> String
+showSecond :: String -> Maybe String -> String
 showSecond c mc2 =
   maybe c (\c2 -> fromLines' [c,c2]) mc2
   <> postCardSep

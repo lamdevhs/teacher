@@ -31,6 +31,16 @@ joinWith = intercalate
 constM :: Applicative f => a -> b -> f a
 constM a _ = pure a
 
+glueWith :: a -> [[a]] -> [a]
+glueWith x [] = []
+glueWith x [xs] = xs
+glueWith x (xs:r) = xs ++ (x : glueWith x r)
+
+asHead :: a -> [a] -> [a]
+asHead x xs = x:xs
+
+type Lines = [String]
+
 data CmdCard = Skip | ShowAnswer | Mistake | Next deriving Show
 data CmdGen = Quit | QuitSave | ShowScore deriving Show
 data Step = Answer | Question
@@ -44,3 +54,13 @@ data Config = Config {
   maybeLoop :: IO () -> IO (),
   maybeVerbose :: IO () -> IO ()
 }
+
+newtype Card = Card [String]
+newtype QandA = QandA (String, String)
+newtype Deck = Deck [Card]
+newtype LessonMaterial = LessonMaterial {
+  mainPile: Deck,
+  bottomPile: Deck
+}
+
+

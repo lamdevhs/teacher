@@ -4,41 +4,82 @@ import Teacher.Types
 -- not base
 import Data.List.Split (splitOn)
 
-readingDeck :: FilePath -> IO Deck
-readingDeck path = readFile path =>> asDeck
+deckFromFile :: FilePath -> IO Deck
+deckFromFile path = readFile path =>> deckFromStr
 
-cardSepF = "???"
-sideSepF = "%%%"
+oneCard = ...
+  afterQuestion
+afterQuestion -> showAnswer -> afterAnswer
 
-asDeck :: String -> Deck
-asDeck
+deckFromStr :: String -> Deck
+deckFromStr
     =  linesOf
-    ./ tidy
-    ./ splitOn [cardSepF]
-    ./ fmap (splitOn [sideSepF] ./ fmap fromLines' ./ maybeCard)
-    ./ justList
+    .| runState parser
+    .| fmap (tidy .| cardFromStr)
+    .| justList
   where
-    maybeCard (a: b: rest) = if null rest
-      then Just (a, b, Nothing)
-      else Just (a, b, Just $ fromLines' rest)
-    maybeCard _ = Nothing
-    tidy = filter (diff "")
+    tidy = ...
+
+type LineP
+    = (MonadState PState m,
+       MonadReader (Line -> Maybe (RawCard, LineP)) m)
+    => String
+    -> m [RawCard]
+    -> m [RawCard]
+
+type RCardP = MonadState Lines m => m (Maybe Card)
+newtype RawCard = RawCard (Lines, RCardP)
+
+data PState = PState {
+  _rawDeck :: Lines,
+  _rawCard :: RawCard,
+  _linep :: LineP
+}
+
+p = withLine $ \l ->
+    initp <- ask
+    case initp l of
+      Just (rawCard, linep) -> do
+        rcard <- currentRawCard
+        set srawCard
+        set slinep
+        fmap (cons rcard) p
+      Nothing -> linep l p
+
+withLine
+    :: (MonadState PState m,
+        MonadReader (Line -> Maybe (RawCard, LineP)) m)
+    -> (String -> m [RawCard]) -> m [RawCard]
+withLine c = get >>= \case
+  [] -> pure []
+  (x:xs) -> set srest xs >> c x
+
+set setter x = do
+  state <- get
+  put $ setter state x
+
+srest
+    :: PState -> Lines -> PState
+srest state rest = state { _rawDeck = rest }
+
+slinep state x = state { _linep = x }
+srawCard state x = state { _rawCard = x }
+
+caseMaybe, caseEither, caseEmpty (Applicative)
+linep
+  :: (MonadState PState m,
+     MonadReader (Line -> Maybe (RawCard, LineP)) m)
+  => String -> m [RawCard]
+  -> m [RawCard]
+linep l cont = 
+  state <- get
+  _linep state l cont
+      
 
 fromDeck :: Deck -> String
 fromDeck
     =  fmap fromCard
-    ./ joinWith cardSepF
+    .| concat
+    .| fromLines
   where
-    fromCard (x, y, Nothing) = joinWith sideSepF [x, y]
-    fromCard (x, y, Just z) = joinWith sideSepF [x, y, z]
-
-_N = 10
-cardSep = "\n" <> replicate _N '=' <> "\n"
-postCardSep = "\n" <> replicate _N '-'
-
-showFirst :: Content -> String
-showFirst c = cardSep <> c
-showSecond :: Content -> Maybe Content -> String
-showSecond c mc2 =
-  maybe c (\c2 -> fromLines' [c,c2]) mc2
-  <> postCardSep
+    fromCard [] = joinWith sideSepF [x, y, z]
