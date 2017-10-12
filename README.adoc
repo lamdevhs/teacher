@@ -3,7 +3,7 @@
 it's a sequence of cards.
 each card has two or more sides called x, y and z in the examples.
 
-.three possible syntax:
+.three possible syntaxes:
 * oneliner:
 ....
     : x / y / z
