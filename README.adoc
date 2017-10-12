@@ -5,10 +5,13 @@ each card has two or more sides called x, y and z in the examples.
 
 .three possible syntax:
 * oneliner:
+
   ....
   : x / y / z
   ....
+  
 * multiline:
+
   ....
     * x
     x
@@ -17,7 +20,9 @@ each card has two or more sides called x, y and z in the examples.
     * z
     z
   ....
+  
 * multi-oneliner:
+
   ....
     = x
     y
