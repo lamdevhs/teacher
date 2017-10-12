@@ -1,0 +1,23 @@
+
+-- * Format of a deck file:
+-- ** it's a sequence of cards
+-- each card has two or more sides
+-- called x, y and z in the examples.
+--
+-- ** three possible syntax:
+--    . oneliner:
+--      : x / y / z
+--    . multiline:
+--      * x
+--      x
+--      * y
+--      y
+--      * z
+--      z
+--    . multi-oneliner:
+--      = x
+--      y
+--      z
+-- 
+-- ** any white char at the beginning or end of a field
+-- will be trimmed
