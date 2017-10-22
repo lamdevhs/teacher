@@ -1,0 +1,2 @@
+. create Deck -> FilePath -> IO ()
+. create various functions to create generated decks
