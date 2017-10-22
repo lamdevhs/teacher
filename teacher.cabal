@@ -1,5 +1,5 @@
 name:                teacher
-version:             0.0.1.0
+version:             0.1.0.0
 -- synopsis:
 -- description:
 homepage:            https://github.com/githubuser/teacher#readme
@@ -17,6 +17,8 @@ library
   build-depends:       base >= 4.7 && < 5
                      , split
                      , random
+                     , mtl
+                     , transformers
   default-language:    Haskell2010
 
 executable teacher-exe

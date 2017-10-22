@@ -13,9 +13,9 @@ each card has two or more sides called x, y and z in the examples.
 ....
     * x
     x
-    * y
+    / y
     y
-    * z
+    / z
     z
 ....
   
