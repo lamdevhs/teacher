@@ -48,16 +48,16 @@ asHead x xs = x:xs
 
 type Lines = [String]
 
-data CmdQandA = Skip | GiveAnswer | Mistake | Next deriving Show
-data CmdGen = Quit | QuitSave | SayScore deriving Show
+data CmdQandA = Skip | GiveAns | Mistake | Next deriving (Show, Enum, Bounded)
+data CmdGen = Quit | QuitSave | SayScore deriving (Show, Enum, Bounded)
 data Step = Answer | Question deriving Show
 
 type Score = (Int, Int, Int, Int)
 
-type Card = [String]
+type Card = [[String]]
 type Deck = [Card]
 
-type QandA = (String, String)
+type QandA = ([String], [String])
 type Lesson = [QandA]
 {-
 newtype LessonMaterial = LessonMaterial {

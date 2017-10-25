@@ -230,9 +230,9 @@ garbageRCP = const Nothing
 
 onelineRCP :: RawCardParser
 onelineRCP = \case
-  [':':rest] -> rest
+  [':':rest] -> spaceHead rest
       &( splitOn "/"
-      .| fmap tidy
+      .| fmap (tidy .| headOf [])
       .| Just)
   _ ->  error "DEBUG: onelineRCP: wrong input"
 
@@ -241,26 +241,33 @@ multilineRCP [] = error "DEBUG: multilineRCP: wrong input 2"
 multilineRCP (first:rest) = case first of
   '*':cs -> rest
       &( processed
-      .| overHead (asHead cs)
-      .| fmap (fmap tidy .| fromLines .| tidy)
+      .| overHead (asHead $ spaceHead cs)
+      .| fmap (rectoVerso noEmptyLines)
       .| Just)
   _ -> error "DEBUG: multilineRCP: wrong input"
   where
     processed [] = [[]]
     processed (l:ls) = case l of
-      '/':tail -> [] : overHead (asHead tail) (processed ls)
+      '/':tail -> [] : overHead (asHead $ spaceHead tail) (processed ls)
       line -> overHead (asHead line) (processed ls)
 
 multionelineRCP :: RawCardParser
 multionelineRCP (('=':tail):rest)
-    = (tail:rest)
-    &( rectoVerso noEmptyLines
-    .| fmap tidy
+    = spaceHead tail
+    &( headOf rest
+    .| rectoVerso noEmptyLines
+    .| fmap (headOf [])
     .| Just)
 multionelineRCP _ = error "DBG: multionelineRCP: wrong input"
 
 
 -- TOOLS
+headOf :: [a] -> a -> [a]
+headOf = flip (:)
+
+spaceHead :: String -> String
+spaceHead = asHead ' '
+
 overHead :: (a -> a) -> [a] -> [a]
 overHead _ [] = []
 overHead f (head:rest) = f (head) : rest

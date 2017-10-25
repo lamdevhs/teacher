@@ -1,1 +1,3 @@
 listening -> afterQuestion, afterAnswer
+mistakes -> repeatLater/snooze
+Config, Deck -> Input

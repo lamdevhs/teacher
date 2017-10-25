@@ -74,7 +74,7 @@ newHeadAt index list
   where lastIndex = length list - 1
 
 cardToQandA :: Card -> QandA
-cardToQandA (question:ans) = (question, fuse '\n' ans)
+cardToQandA (question:ans) = (question, concat ans)
 -- cardToQandA (question:ans) = (question, "")
 
 
@@ -248,7 +248,7 @@ walk = withQA $ \qa -> do
   doMaybeVerbose
   sayQ qa
   listenAfter Question $ \case
-    GiveAnswer -> do
+    GiveAns -> do
       sayA qa
       listenAfter Answer $ \case
             Mistake -> recordMistake qa >> walk
@@ -278,7 +278,7 @@ charToCmd step c = pure (parsed step c)
     parsed _ 'q'        = Left Quit & Just
 --    parsed _ 'z'        = Left QuitSave & Just
     parsed _ 'c'        = Left SayScore & Just
-    parsed Question 'n' = Right GiveAnswer & Just
+    parsed Question 'n' = Right GiveAns & Just
     parsed Question 's' = Right Skip & Just
     parsed Answer 'm'   = Right Mistake & Just
     parsed Answer 'n' = Right Next & Just
@@ -290,22 +290,28 @@ charToCmd step c = pure (parsed step c)
 
 
 sayCmd :: LessonWalk m => Maybe (Either CmdGen CmdQandA) -> m ()
-sayCmd = maybe "[Unrecognized]" (either show show)
-  .| ("--------------- " <>)
+sayCmd = maybe unknownCmd (either show show)
+  -- .| ("--------------- " <>)
   .| asHead lineEraser
   .| sayStr
 
 lineEraser = '\r'
 
-nnn = 5
+sepBefQ =
+   "\n-.-.-.-.-.-.-.-.-.-.-.-\n\n"
 
 sayQ
   :: LessonWalk m => QandA -> m ()
-sayQ = fst .| ("\n-.-.-.-.-.-.-.-.-.-\n\n" <>) .| sayStr
+sayQ = fst
+   .| fmap mindMargin
+   .| asHead sepBefQ
+   .| fuse '\n'
+   .| sayStr
 sayA
   :: LessonWalk m => QandA -> m ()
-sayA = snd .| sayStr
+sayA = snd .| fmap mindMargin .| fuse '\n'.| sayStr
 
+{-
 sayQorA :: LessonWalk m => Step -> QandA -> m ()
 sayQorA step qa = liftIO $ do
     putStrLn $ replicate n '_' <> show step
@@ -316,6 +322,7 @@ sayQorA step qa = liftIO $ do
     which = qa & case step of
       Question -> fst
       Answer -> snd
+-}
 
 sayEnd
   :: LessonWalk m => m ()
@@ -323,6 +330,18 @@ sayEnd = sayStr "End of Lesson\n@-@-@-@-@-@-@-@-@-@"
 
 sayBye :: LessonWalk m => m ()
 sayBye = sayStr "Bye!"
+
+unknownCmd = "Unknown"
+
+maxSizeCmdName :: Int
+maxSizeCmdName = maximum [f allCmdGen, f allCmdQandA, length unknownCmd]
+  where allCmdGen = [minBound..maxBound] :: [CmdGen]
+        allCmdQandA = [minBound..maxBound] :: [CmdQandA]
+        f :: Show a => [a] -> Int
+        f = fmap (show .| length) .| maximum
+
+mindMargin :: String -> String
+mindMargin = (replicate maxSizeCmdName ' ' <>)
 
 {-
 
