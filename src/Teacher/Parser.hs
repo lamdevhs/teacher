@@ -193,7 +193,16 @@ multionelineBP :: (DeckParserClass m, Monad m) => BoundaryParser m
 multionelineBP ('=' : _) = Just (multionelineICP, multionelineRCP)
 multionelineBP _ = Nothing
 
-bpList = [onelineBP, multilineBP, multionelineBP]
+binaryBP :: (DeckParserClass m, Monad m) => BoundaryParser m
+binaryBP ('@' : _) = Just (binaryICP, binaryRCP)
+binaryBP _ = Nothing
+
+bpList
+   = onelineBP
+   : multilineBP
+   : multionelineBP
+   : binaryBP
+   : []
 
 ----
 -- * InCardParser's
@@ -222,6 +231,9 @@ multilineICP = alwaysKeepICP
 
 multionelineICP :: (DeckParserClass m, Monad m) => InCardParser m
 multionelineICP = alwaysKeepICP
+
+binaryICP :: (DeckParserClass m, Monad m) => InCardParser m
+binaryICP = alwaysKeepICP
 
 ----
 -- * RawCardParser's
@@ -260,6 +272,15 @@ multionelineRCP (('=':tail):rest)
     .| Just)
 multionelineRCP _ = error "DBG: multionelineRCP: wrong input"
 
+binaryRCP :: RawCardParser
+binaryRCP (('@':cs): rest) =
+  spaceHead cs &(
+     headOf []
+  .| headOf [rectoVerso noEmptyLines rest]
+  .| Just)
+binaryRCP _ = error "DBG: binaryRPC: wrong input"
+
+
 
 -- TOOLS
 headOf :: [a] -> a -> [a]
@@ -279,15 +300,17 @@ tidy :: String -> String
 tidy = rectoVerso unspace
 
 unspace :: String -> String
-unspace "" = ""
-unspace all@(c:rest) = case c of
-  ' ' -> unspace rest
-  '\n' -> unspace rest
-  '\t' -> unspace rest
-  _ -> all
+unspace = dropWhile isWhite
+
+isWhite :: Char -> Bool
+isWhite = \case
+  ' ' -> True
+  '\n' -> True
+  '\t' -> True
+  _ -> False
 
 noEmptyLines :: [String] -> [String]
-noEmptyLines [] = []
-noEmptyLines all@(l:rest) = case l of
-  "" -> noEmptyLines rest
-  _ -> all
+noEmptyLines = dropWhile isWhiteline
+
+isWhiteline :: String -> Bool
+isWhiteline = all isWhite

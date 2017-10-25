@@ -3,7 +3,7 @@
 it's a sequence of cards.
 each card has two or more sides called x, y and z in the examples.
 
-.three possible syntaxes:
+.possible syntaxes:
 * oneliner:
 ....
     : x / y / z
@@ -26,6 +26,13 @@ each card has two or more sides called x, y and z in the examples.
       z
 ....
 
-* any empty lines at the beginning or end of a side will be trimmed
+* binary: (two sides only, the first is a oneliner)
+....
+    @ x
+      y
+      y
+....
+
+* any empty / white lines at the beginning or end of a side will be trimmed
 * the whitespace at the start of each line is conserved, and any syntax character {=,:,/,*}
 recognized as such is replaced by a space to keep alignment
