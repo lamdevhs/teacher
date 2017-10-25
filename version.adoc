@@ -1,6 +1,7 @@
 v1.1.0 -- working version
-- added margin in TUI to isolate command names and content
-- replaced Card = [String] by \[[String]], and QandA by ([String], [String]),
+
+* added margin in TUI to isolate command names and content
+* replaced Card = [String] by \[[String]], and QandA by ([String], [String]),
   to keep each line isolated so the margin can be appended easily at the start of each
-- replaced GiveAnswer by GiveAns, and "[Unknown]" by "Unknown", to have a smaller margin
-- added missing filter of empty lines on start/end of sides of multi(one)line cards
+* replaced GiveAnswer by GiveAns, and "[Unrecognized]" by "Unknown", to have a smaller margin
+* added missing filter of empty lines on start/end of sides of multi(one)line cards
