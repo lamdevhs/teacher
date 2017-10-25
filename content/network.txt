@@ -1,0 +1,16 @@
+* couches OSI:
+/ 7 couches,
+  1 = niveau le plus bas
+ 
+* chaque niveau N a deux types d'activités:
+/ communication les infos de N+1 du même sys
+  vers le niveau N+1 distant en utilisant le service du niveau N-1
+  tâche de type 1: SERVICE visavis le niveau N+1
+ 
+* échanger des données avec le niveau N homologue, toujours via
+  les services du niveau N-1 du système local
+  tâche de type 2: PROTOCOLE visavis le niveau N
+
+* l'existence du service est nécessaire au protocole
+
+* 
