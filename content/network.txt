@@ -8,9 +8,33 @@
   tâche de type 1: SERVICE visavis le niveau N+1
  
 * échanger des données avec le niveau N homologue, toujours via
-  les services du niveau N-1 du système local
+/ les services du niveau N-1 du système local
   tâche de type 2: PROTOCOLE visavis le niveau N
 
 * l'existence du service est nécessaire au protocole
+  un protocole différent par niveau
 
-* 
+* def: service de niveau N
+/ est une prestation qu'une entité N et es niveaux inférieurs sont
+  capables de fournir au niveau N+1
+
+* def: utilisateur du service de niveau N
+/ l'ensemble des entités N+1 qui demandent un service N à travers un SAP N.
+  SAP = service access point
+
+* def: primitives
+/ ce sont les interactions élémentaires utilisés pour qu'utilisateurs
+  et fournisseurs dialoguent
+  
+* 4 catégories de demande:
+/ Demande = invocation d'une procédure par un utilisateur de service 
+  Indication = notification par le fournisseur de service de cette
+  .  demande à l'entité située à l'autre bout de la connection
+  Réponse = primitive servant à un utilisateur de service pour répondre à une indication
+  Confirmation = primitive permettant à un fournisseur de service de terminer une procédure
+  .  ititialisée au préalable par primitive de demande
+
+* en fonction des services, plusieurs catégories de primitives peuvent être utilisés:
+/ D  = demande simple vers une couche inférieure
+
+* emporter calculette!!!
