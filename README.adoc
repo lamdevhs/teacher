@@ -12,18 +12,18 @@ each card has two or more sides called x, y and z in the examples.
 * multiline:
 ....
     * x
-    x
+      x
     / y
-    y
+      y
     / z
-    z
+      z
 ....
   
 * multi-oneliner:
 ....
     = x
-    y
-    z
+      y
+      z
 ....
 
 * any empty lines at the beginning or end of a side will be trimmed
