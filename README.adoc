@@ -26,4 +26,6 @@ each card has two or more sides called x, y and z in the examples.
     z
 ....
 
-any white char at the beginning or end of a field will be trimmed
+* any empty lines at the beginning or end of a side will be trimmed
+* the whitespace at the start of each line is conserved, and any syntax character {=,:,/,*}
+recognized as such is replaced by a space to keep alignment
