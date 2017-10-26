@@ -7,14 +7,11 @@ import System.Environment (getArgs)
 import Control.Monad ((>=>))
 
 main :: IO ()
-main = undefined
-{- main = getArgs >>= input >>= either error teaching
--- main = pureArgs >>= input >>= either error teaching
+main = getArgs >>= input >>= either error teaching
 
-test = pureArgs >>= input >>= either error f
-  where
-    f (d, c) = pure c
--}
+
+
+-- tests, drafty area
 
 testParser = mapM_ (readDeck >=> print) files
 testTeacher = pureArgs >>= input >>= either error teaching

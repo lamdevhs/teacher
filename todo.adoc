@@ -5,3 +5,7 @@
 . create Input { files :: [FilePath], optRandom, optVerbose, etc } and rewrite input :: Args -> Input
 . on console, move to the right the lesson and print the commands in the left column thus created
 . modify rawcard parsers so they keep whitespace intact after parsing the boundary of sides
+. créer Option = NoRand | ...
+. puis créer options :: [Option] -> config
+  pour simplifier l'appel de teaching en:
+  teaching $ input decks $ options [NoRand]
