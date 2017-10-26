@@ -4,10 +4,14 @@ import Teacher (input, teaching)
 import Teacher.Parser
 import Teacher.Types
 import System.Environment (getArgs)
+import System.IO (hSetBuffering, stdin, stdout, BufferMode(NoBuffering))
 import Control.Monad ((>=>))
 
 main :: IO ()
-main = getArgs >>= input >>= either error teaching
+main = do
+  hSetBuffering stdin NoBuffering
+  hSetBuffering stdout NoBuffering
+  getArgs >>= input >>= either error teaching
 
 
 
