@@ -9,3 +9,23 @@
 . puis créer options :: [Option] -> config
   pour simplifier l'appel de teaching en:
   teaching $ input decks $ options [NoRand]
+
+-- extensions:
+. ajouter une répétition automatique de préfix de la sorte:
+    # foo
+      : aze / rty
+      @ xyz 
+        abc
+    : wawa / bla
+  équivaut à:
+    : foo aze / rty
+    @ foo xyz 
+      abc
+    : wawa / bla
+. ajouter un symbol pour commenter des zones (ne serait-ce que pour pouvoir vérifier
+  automatiquement que la syntaxe de README est compatible avec le parseur
+
+. ajouter l'option d'afficher la réponse juste après la question sans attendre,
+  afin de faire découvrir la leçon pour la première fois
+
+. ajouter un mode de tri pour décides des cartes à garder et ensuite à exporter dans un nouveau deck
