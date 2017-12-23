@@ -1,0 +1,82 @@
+@ câble croisé
+  câble entre deux machines/routeurs
+        entre deux hubs/switchs
+
+@ câble droit
+  câble entre hub/switch et machine/routeur
+
+@ assigner une IP à une interface
+  ifconfig eth0 X.X.X.X netmask X.X.X.X
+
+@ IP classe A
+  0xxx,xxxx = [0..127]
+  netid = 1 octet (8 bits)
+  sub+hostid = 3 octets (24 bits)
+  A -> few very large
+
+@ IP classe B
+  10xx,xxxx = [128..191]
+  netid = 2 octets (16 bits)
+  sub+hostid = 2 octets
+
+@ IP classe C
+  110x,xxxx = [192..223]
+  netid = 3 octets
+  sub+hostid = 1 octet
+  C -> lots of small
+
+@ IP classe D
+  1110,xxxx = [224..239]
+  multicast
+
+@ IP classe E
+  1111,xxxx = [240..255]
+  reserved
+
+@ afficher la table de routage
+  > route -n
+
+* ajouter à la table de routage un routeur
+  faisant le lien avec un autre réseau
+/ route add -net [destIP] netmask x.x.x.x gw [routeurIP]
+
+@ capture de réseau
+  tshark
+  tcpdump -e -vv
+  tcpdump -vv icmp -e -i eth0
+    Cet appel demande à tcpdump de capturer sur
+    l'interface réseau eth0 les paquets liés au
+    protocole ICMP en étant verbeux et en indiquant
+    les adresses de couche 2 présentes dans les
+    différentes trames examinées.
+
+@ ip `and` netmask =
+  subnet id
+
+@ domaine de collision:
+  ensemble des interfaces tq si deux parlent simultanément,
+  une collision se produit
+
+@ un message est dit diffusé/broadcasté si
+  il est destiné à être traité par tout noeud en mesure
+  de le recevoir.
+  broadcast niveau mac: 0xFFFF
+  broadcast niveau IP: 255.255.255.255
+
+@ dhcp stands for
+  dynamic host configuration protocol
+
+@ dhcp, fichiers
+  /etc/dhcp3/dhcpd.conf
+  /var/lib/dhcpd/dhcpd.leases
+  /var/log/syslog
+
+@ dhcp, commandes
+  /etc/init.d/dhcp3-server start
+  dhclient
+  dhcrelay3 [serverIP] -d
+
+@ dhcp configuration
+  subnet 192.0.1.0 netmask 255.255.255.000 {
+    range 192.0.1.1 192.0.1.10;   # <- semicolon
+  }   # <- no semicolon

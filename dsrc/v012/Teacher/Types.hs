@@ -45,20 +45,20 @@ glueWith x (xs:r) = xs ++ (x : glueWith x r)
 
 asHead :: a -> [a] -> [a]
 asHead x xs = x:xs
-tupled :: (a -> b -> r) -> (a, b) -> r
-tupled f (x, y) = f x y
-bot :: a -> [a]
-bot = (:[])
 
 type Lines = [String]
 
+data CmdQandA = Skip | GiveAns | Mistake | Next deriving (Show, Enum, Bounded)
+data CmdGen = Quit | QuitSave | SayScore deriving (Show, Enum, Bounded)
+data Step = Answer | Question deriving Show
 
---type Score = (Int, Int, Int, Int)
+type Score = (Int, Int, Int, Int)
 
 type Card = [[String]]
 type Deck = [Card]
 
---type QandA = ([String], [String])
+type QandA = ([String], [String])
+type Lesson = [QandA]
 {-
 newtype LessonMaterial = LessonMaterial {
   mainPile :: Deck,

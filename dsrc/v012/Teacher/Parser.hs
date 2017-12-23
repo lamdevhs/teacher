@@ -10,11 +10,6 @@ import Data.List.Split (splitOn)
 
 import Teacher.Types
 
-
-
-
-
-
 readDeck path = fmap f (readFile path)
   where
     f = linesOf .| grouped isBoundary .|

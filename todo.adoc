@@ -11,7 +11,7 @@
   teaching $ input decks $ options [NoRand]
 
 -- extensions:
-. ajouter une répétition automatique de préfix de la sorte:
+. ajouter une répétition automatique de préfix/titres de la sorte:
     # foo
       : aze / rty
       @ xyz 
@@ -22,10 +22,43 @@
     @ foo xyz 
       abc
     : wawa / bla
-. ajouter un symbol pour commenter des zones (ne serait-ce que pour pouvoir vérifier
-  automatiquement que la syntaxe de README est compatible avec le parseur
+  le traitement pourra être très simplement récursif:
+  - si titre rencontré: récupérer tout ce qui est indenté
+  - appliquer l'algo général à cette sous-partie (moins l'indentation)
+  - ajouter le titre partout, éventuellement réindenter pour le style
+
 
 . ajouter l'option d'afficher la réponse juste après la question sans attendre,
   afin de faire découvrir la leçon pour la première fois
 
 . ajouter un mode de tri pour décides des cartes à garder et ensuite à exporter dans un nouveau deck
+
+. créer une syntax pour lister le nombre de choses à se rappeler par carte, et l'afficher
+  eg si une carte est de la forme:
+  @ bidule
+    .truc
+    .autre truc
+  teacher pourra afficher
+  Q: bidule ...? (two things)
+si une ligne ne commence par par */./etc, elle devrait etre ignoree par le compteur
+pour simplifier, on pourra choisir un symbol indiquant que toutes les lignes qui suivent jusqu'à une ligne vide doivent etre comptees, eg:
+  @ foo
+    .
+    this is 1
+    this is 2
+
+    this is not 3
+le comptage pourra etre affiche dans la marge
+
+. éliminer l'option "noloop", le programme peut être quitté à tout instant.
+  clairement informer lorsque la fin de la leçon est atteinte
+. utiliser stdin pour récupérer les decks
+
+. système de tagging de sides des cartes, dépendant du deck en question
+
+. système de focus/tough ('review'??:
+  * toutes les cartes tough doivent être épuisées au moins une fois par leçon
+  * si il y a moins de cartes normales que 4*tough, n'afficher les tough qu'une fois
+  * sinon, il faut trouver une fraction adaptée
+  * afficher lorsqu'une carte est tough ou normale
+  * supprimer une carte tough des cartes normales??

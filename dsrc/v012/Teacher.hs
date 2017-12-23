@@ -1,467 +1,28 @@
-{-# LANGUAGE CPP #-}
--- {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE FlexibleInstances #-}
-
 -- module Teacher (teaching, input) where
 module Teacher where
 
--- #define DRAFT
-
 -- base
-import Control.Arrow ( (|||), (&&&), second)
-import Control.Applicative ( (<|>) )
-import Control.Monad (guard)
--- import qualified Control.Arrow as Arr
--- import qualified Data.Tuple as Tuple (swap)
+import Control.Arrow ( (|||) , (&&&) )
+import qualified Control.Arrow as Arr
+import qualified Data.Tuple as Tuple (swap)
+
+import Control.Monad.IO.Class
+import Control.Monad.State
+import Control.Monad.Reader
+
 
 import System.Random
+
+--to delete
 
 import Teacher.Types
 import Teacher.Parser (readDeck)
 
--- main = getArgs >>= input >>= either error teach
 
-
--- STATE 
-data LessonState = LessonState {
-  lessonContent :: Deck,
-  pile :: Deck,
-  tough :: Deck,
-{-
-  piles :: (Deck {-remainder-}, Deck {-mistakes-}),
-  mistakesNb :: Int,
-  total :: Int,
-  skippedNb :: Int,
--}
-  _inTheEnd :: T Forever OnOff,
-  _nextCard :: T RandomPick OnOff,
-  _verbosity :: T Verbosity OnOff,
-  _processed :: T QuestionIx Int
-}
-
-data T tag content = T { t :: content } deriving Show
-data OnOff = On | Off deriving Show
-data Forever
-data RandomPick
-data Verbosity
-data QuestionIx
-
-instance Functor (T tag) where
-  fmap f (T a) = T (f a)
-
-toggle :: T g OnOff -> T g OnOff
-toggle = fmap switch
-
-switch :: OnOff -> OnOff
-switch On = Off
-switch Off = On
-
-taggedOption :: (state -> T g a) -> (a -> r) -> state -> r
-taggedOption getter behavior state =
-  t (getter state) & behavior
-
-
-inTheEnd = taggedOption _inTheEnd forever
-nextCard = taggedOption _nextCard randomPick
-verbosity = taggedOption _verbosity verbose
-processed = taggedOption _processed card2QandA
-
--- LessonState.inTheEnd
-forever :: OnOff -> IO () -> IO ()
-forever On = id
-forever Off = always quit
-
-quit = putStrLn "bye!"
-
--- LessonState.nextCard
-randomPick :: OnOff -> Deck -> IO (Card, Deck)
-randomPick On  = randPop
-randomPick Off = pop .| pure
-
-randPop :: [a] -> IO (a, [a])
-randPop [] = error "empty list"
-randPop xs = (popAt ? xs) <$> randInt (0, length xs - 1)
-
-pop :: [a] -> (a, [a])
-pop [] = error "empty list"
-pop (x:xs) = (x, xs)
-
-
---LessonState.verbosity
-verbose :: OnOff -> IO () -> IO ()
-verbose On  = id
-verbose Off = always pass
-
-pass :: Applicative f => f ()
-pass = pure ()
-
-always :: a -> b -> a
-always x _ = x
-
-card2QandA :: Int -> Card -> ([String], [String])
-card2QandA ix card = popAt ix card & second concat
-
-popAt :: Int -> [a] -> (a, [a])
-popAt ix xs
-    | length xs <= ix
-      = error "index out of range"
-    | otherwise
-      = let (bef, rest) = takeAndRest ix xs
-        in  (head rest, bef ++ tail rest)
-
-{-
-tellStats :: LessonState -> IO ()
-tellStats state = putStrLn
-    ("mistakes: "<> show m <> "/" <> show t <> ", skipped: " <> show s)
-  where
-    m = mistakesNb state
-    t = total state
-    s = skippedNb state
--}
-
-printProgress :: LessonState -> IO ()
-printProgress state = putStrLn
-    ("[" <> replicate done '+'
-         <> replicate remaining '-'
-         <> "] "
-         <> show done <> "/" <> show lessonLen)
-  where
-    lessonLen = length (lessonContent state)
-    remaining = length (pile state)
-    done = lessonLen - remaining
-
-
-
-start :: LessonState -> IO ()
-start s = teach state
-  where state = s { pile = lessonContent s }
-
-teach :: LessonState -> IO ()
-teach s{-state-} = do
-    r <- randInt (1,4)
-    if r == 4
-      then teachToughCard
-      else teachNextCard
-  where
-    teachToughCard =
-      case tough s of
-        [] -> teachNextCard -- no tough card to teach
-        cards -> do
-          (card, _) <- randPop cards
-          let
-            (question, answer) = processed s card
-        --printProgress s
-        --verbosity s (tellStats s)
-          printWithMargin question
-          listen Question s $ \s' -> \case
-            Skip -> teach s'
-            Reveal -> do
-              printWithMargin answer
-              listen Answer s' $ \s'' -> \case
-                Tough -> teach s'' { tough = (card : tough s) }
-                Next -> teach s''
-    ----
-    teachNextCard =
-      case pile s of
-        [] -> inTheEnd s (start s)
-        cards -> do
-          (card, rest) <- nextCard s cards
-          let
-            (question, answer) = processed s card
-        --printProgress s
-        --verbosity s (tellStats s)
-          printWithMargin question
-          listen Question (s { pile = rest }) $ \s' -> \case
-            Skip -> teach s'
-            Reveal -> do
-              printWithMargin answer
-              listen Answer s' $ \s'' -> \case
-                Tough -> teach s'' { tough = (card : tough s) }
-                Next -> teach s''
-
-
-
-
-
-announceMistakes :: IO ()
-announceMistakes = putStrLn "End of Main Pile. Now, Mistakes."
-
-printWithMargin :: Lines -> IO ()
-printWithMargin = fmap (withMargin ' ') .| fuse '\n' .| putStrLn
-
-withMargin :: Char -> String -> String
-withMargin c str = replicate marginSize c <> str
-
-enumAll :: (Enum a, Bounded a) => [a]
-enumAll = [minBound..maxBound]
-
-marginSize = maximum lengths + 2
-  where
-    lengths = length <$> (fmap show locals <> fmap show generals)
-    locals = enumAll :: [LocalCmd]
-    generals = enumAll :: [GeneralCmd]
-
-data Step = Question | Answer deriving Show
-data LocalCmd = Skip | Reveal | Tough | Next deriving (Show, Enum, Bounded)
-
-
-
-
--- LISTENING
-listen :: Step
-       -> LessonState
-       -> (LessonState -> LocalCmd -> IO ())
-       -> IO ()
-listen step s{-state-} cont = do
-    putChar '?'
-    char <- getChar
-    let result = parseCmd char
-    feedback result
-    result & maybe whenInvalid whenValid
-  where
-    parseCmd char =
-        (generalCmdParser char =>> Left) <|>
-        (localCmdParser step char =>> Right)
-    whenInvalid = loop s
-    whenValid =
-        generalAction s loop ||| cont s
-    loop s = listen step s cont
-
-feedback :: Maybe (Either GeneralCmd LocalCmd) -> IO ()
-feedback = show_ .| asHead lineEraser .| putStrLn
-  where
-    show_ = maybe invalidCommand (either show show)
-invalidCommand = "Invalid"
-lineEraser = '\r'
-
-
-data GeneralCmd = Quit -- | TellStats
-  deriving (Show, Enum, Bounded)
-
-localCmdParser :: Step -> Char -> Maybe LocalCmd
-localCmdParser Question 'n' = Reveal & Just
-localCmdParser Question ' ' = Reveal & Just
-localCmdParser Question 's' = Skip & Just
-localCmdParser Answer   'm' = Tough & Just
-localCmdParser Answer   'n' = Next & Just
-localCmdParser Answer   ' ' = Next & Just
-localCmdParser _         _  = Nothing
-
-generalCmdParser :: Char -> Maybe GeneralCmd
-generalCmdParser = \case
-  'q' -> Just Quit
- -- '!' -> Just TellStats
-  _   -> Nothing
-
-generalAction :: LessonState -> (LessonState -> IO ()) -> GeneralCmd -> IO ()
--- generalAction s cont TellStats = tellStats s >> cont s
-generalAction _ _ Quit = quit
-
-caseNothing :: Maybe b -> b -> b
-caseNothing (Just x) _ = x
-caseNothing Nothing  x = x
-
-
-class Operations v where
-  add :: Int -> Int -> v
-  mul :: Int -> Int -> v
-
-instance Operations [Char] where
-  add = showOp '+'
-  mul = showOp 'x'
-
-instance Operations Int where
-  add = (+)
-  mul = (*)
-
-showOp :: Char -> Int -> Int -> String
-showOp o i j = show i <> (' ' : o : ' ' : show j)
-
-card :: [a -> [String]] -> a -> Card
-card makers a = fmap ($ a) makers
-
-deck :: [a -> [String]] -> [a] -> Deck
-deck makers = fmap (card makers)
-
-result :: Int -> Int
-result = id
-oper :: String -> String
-oper = id
-
-addDeck = deck [tupled add .| oper .| bot, tupled add .| result .| show .| bot] couples
-  where
-    swap (x, y) = (y, x)
-    couples = cps <> fmap swap cps
-    --cps = (,) <$> [1..999] <*> [1..999]
-    cps = multiples [6,7,8,9] [2,3,4,5]
-
-ds = [1..9]
-multiples d l = (,) <$> d <*> l
-
-dftState content = LessonState {
-  lessonContent = content,
-  pile = content,
-  tough = [],
-{-
-  piles = (content, []),
-  mistakesNb = 0,
-  total = 0,
-  skippedNb = 0,
--}
-  _inTheEnd = T On,
-  _nextCard = T On, -- !:!!!!!!! to change
-  _verbosity = T Off,
-  _processed = T 0
-}
-
-
-(?) :: (a -> b -> c) -> b -> (a -> c)
-f ? b = \a -> f a b
-
-randInt :: (Int, Int) -> IO Int
-randInt range = fmap (randomR range .| fst) newStdGen
-
-
-
-#ifdef ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-
-
---focusOn :: LessonState -> a -> LessonState
-focusOn :: [a] -> a -> [a]
-{-
-focusOn s item = s { pile = pile s <> replicate n item }
-  where
-    n = length (lessonContent s) `div` 7 -}
--- instead of a pile being the copy of the lesson:
--- we keep a record of indices of the cards which will have been used
--- already
--- also: focusOn must add only one item to the lesson content in the case
--- when we're in noRand mode
-focusOn [x] item = [item, x]
-focusOn (x:y:[]) item = x : y : item : []
-focusOn (x:y:z:[]) item = x : y : item : z : [] 
-focusOn (x:y:zs) item = x : y : item : zs `focusOn` item
-
-teach :: LessonState -> IO ()
-teach s{-state-} = case pile s of
-    [] -> inTheEnd s (start s)
-    cards -> do
-      (card, rest) <- nextCard s cards
-      let
-        (question, answer) = processed s card
-      --printProgress s
---      verbosity s (tellStats s)
-      printWithMargin question
-      listen Question s $ \s'{-newstate-} -> \case
-        Skip -> teach s' { pile = rest }
-        Reveal -> do
-          printWithMargin answer
-          listen Answer s' $ \s''{-newstate-} -> \case
-            Focus -> teach s'' { pile = rest `focusOn` card }
-            Next -> teach s'' { pile = rest }
-
-
-
-
-
-
-shuffled' :: [Int] -> [a] -> [a]
-shuffled' rs [] = []
-shuffled' (r:rs) xs =  newHead : shuffled' rs (end <> beg)
-    -- reversing end and beg avoids constantly ending
-    -- the shuffling with (last xs)
-  where
-    (newHead, beg, end) = case takeAndRest (processed r) xs of
-        (beg, []) -> (last beg, init beg, [])
-        (beg, end) -> (head end, beg, tail end)
-      -- ^ because takeAndRest could return (beg, [])
-    processed n = mod n ln
-    ln = length xs
-
-shuffled :: StdGen -> [a] -> [a]
-shuffled rg list = shuffled' (randoms rg :: [Int]) list
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
- | ChangeOption ...
-
-
-
-
-  ... change options
-
-
-
-
-
-
-
-
-
-
-#endif
-
----------------
-
-
-
-
-
-{-
-
-
--- ideas better hs syntax:
-      
-
-listen : Step -> state -> cont -> IO ()
-   where state = LessonState a
-         cont = state -> LocalCmd -> IO ()
-* step state/s cont = do
-    char <- getChar
-    let result = parseCmd char
-    feedback result
-    result & maybe whenInvalid whenValid
-  where
-    parseCmd char = caseNothing ARG
-      generalCmdParser char =>> Left
-      localCmdParser step char =>> Right
-    whenInvalid = loop s
-    whenValid = ||| ARG
-       generalAction s loop
-       cont s
-    loop s = listen localParser s cont
-
-generalAction
-  : state -> listenAgain -> IO ()
-    state = LessonState
-    listenAgain = state -> IO ()
-* state/s cont TellScore = tellScore s >> cont s
-* _       _    Quit = quit
-
--}
-
-
--- ############################# old stuff:
-
-#ifdef OLDSTUFF
-
-teach :: 
+-- main = getArgs >>= input >>= either error teaching
 
 input :: [String] -> IO (Either String (Lesson, Config))
 input args = maybeFiles & maybe
@@ -519,7 +80,21 @@ cardToQandA (question:ans) = (question, concat ans)
 
 ----
 -- * Randomness
+shuffled' :: [Int] -> [a] -> [a]
+shuffled' rs [] = []
+shuffled' (r:rs) xs =  newHead : shuffled' rs (end <> beg)
+    -- reversing end and beg avoids constantly ending
+    -- the shuffling with (last xs)
+  where
+    (newHead, beg, end) = case takeAndRest (processed r) xs of
+        (beg, []) -> (last beg, init beg, [])
+        (beg, end) -> (head end, beg, tail end)
+      -- ^ because takeAndRest could return (beg, [])
+    processed n = mod n ln
+    ln = length xs
 
+shuffled :: StdGen -> [a] -> [a]
+shuffled rg list = shuffled' (randoms rg :: [Int]) list
   
 testA = do
   g <- newStdGen
@@ -768,23 +343,17 @@ maxSizeCmdName = maximum [f allCmdGen, f allCmdQandA, length unknownCmd]
 mindMargin :: String -> String
 mindMargin = (replicate maxSizeCmdName ' ' <>)
 
-
-#endif
 {-
 
 config.lessonFocus :: Card -> (Question = Face, [Faces])
 askQuestion :: Question -> IO ()
 giveAnswer :: [Faces] -> IO ()
 
-data LessonState a = LessonState {
-  piles :: (Deck a{-remainder-}, Deck a {-mistakes-}),
-  inTheEnd :: IO () -> IO (),
-  nextCard :: Deck -> (Card, Deck),
-  verbosity :: IO () -> IO (),
-  score :: Score,
-  processed :: Card a -> (a, [a]) {-question, answer-}
-}
-
+data LessonConfig = LessonConfig {
+  verbosity = terse | verbose
+  endOfLesson = restart = id | terminate = const quit
+  order = random | asGiven
+  lessonFocus
 
 idea: order :: Deck -> (next, rest)
 
@@ -897,7 +466,9 @@ generalParser 't' cont = Just (sayScore >> cont)
 generalParser 'q' _    = Just quitTeacher
 generalParser _ cont = Nothing
 
-
+caseNothing :: Maybe b -> b -> b
+caseNothing (Just x) _ = x
+caseNothing Nothing  x = x
 
 walk
   :: (IO () -> IO ())
